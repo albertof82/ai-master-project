@@ -32,6 +32,11 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
+import os
+os.environ["MODEL_PATH"]    = "/content/model.pkl"
+os.environ["METADATA_PATH"] = "/content/metadata.json"
+
+
 
 # ---- Helpers contrato ----
 def required_prediction_columns() -> List[str]:
