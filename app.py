@@ -75,27 +75,28 @@ STATE = AppState()
 
 
 # ---- Helpers de UI ----
-def _read_uploaded_file(file: gr.File) -> Tuple[str, pd.DataFrame]:
-    """Lee CSV o Parquet según la extensión."""
-    if file is None:
+from typing import Union
+
+def _read_uploaded_file(file_path: Union[str, None]) -> Tuple[str, pd.DataFrame]:
+    if not file_path:
         raise ValueError("No se recibió archivo. Sube un .csv o .parquet")
 
-    name = os.path.basename(file.name)
+    name = os.path.basename(file_path)
     ext = os.path.splitext(name)[1].lower()
 
     logger.info(f"Intentando cargar archivo: {name}")
     if ext == ".csv":
-        df = pd.read_csv(file.name)
+        df = pd.read_csv(file_path)
     elif ext == ".parquet":
-        import pyarrow  # noqa: F401  (para asegurar dependencia)
-        df = pd.read_parquet(file.name)
+        import pyarrow  # noqa: F401
+        df = pd.read_parquet(file_path)
     else:
         raise ValueError(f"Extensión no soportada: {ext}. Usa .csv o .parquet")
 
     if df.empty:
         raise ValueError("El archivo parece estar vacío.")
-
     return name, df
+
 
 
 def _auto_guess_mappings(df: pd.DataFrame) -> Dict[str, Optional[str] | List[str]]:
@@ -113,7 +114,7 @@ def _auto_guess_mappings(df: pd.DataFrame) -> Dict[str, Optional[str] | List[str
 
 
 # ---- Callbacks ----
-def cb_load_file(file: gr.File, use_synthetic: bool) -> Tuple[str, str, gr.Dataframe, List[str]]:
+def cb_load_file(file: str, use_synthetic: bool) -> Tuple[str, str, gr.Dataframe, List[str]]:
     """
     Carga dataset subido o genera datos sintéticos para demo.
     Devuelve: mensaje, resumen, head, columnas.
@@ -305,14 +306,14 @@ def cb_test_contract() -> str:
     """Test rápido del contrato de predict()."""
     try:
         if STATE.proc_df is None:
-            return "❌ Preprocesa primero."
+            return "Preprocesa primero."
         preds_df = predict(STATE.proc_df, STATE.mappings, model=STATE.model)
         missing = [c for c in required_prediction_columns() if c not in preds_df.columns]
         if missing:
-            return f"❌ predict() NO cumple. Faltan columnas: {missing}"
-        return "✅ predict() cumple contrato: y_pred (+ y_proba si aplica)."
+            return f"predict() NO cumple. Faltan columnas: {missing}"
+        return "predict() cumple contrato: y_pred (+ y_proba si aplica)."
     except Exception as e:
-        return f"❌ Error: {e}"
+        return f"Error: {e}"
 
 
 # ---- Construcción de la UI (Gradio Blocks) ----
@@ -328,7 +329,7 @@ def build_ui() -> gr.Blocks:
             # --- Tab: Upload ---
             with gr.Tab("1) Cargar"):
                 with gr.Row():
-                    file = gr.File(label="Sube archivo (.csv o .parquet)", file_count="single", type="file")
+                    file = gr.File(label="Sube archivo (.csv o .parquet)", file_count="single", type="filepath")
                     use_synth = gr.Checkbox(label="Usar datos sintéticos de ejemplo", value=False)
                 load_btn = gr.Button("Cargar")
                 load_msg = gr.Markdown()
