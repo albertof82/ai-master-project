@@ -509,6 +509,28 @@ def build_ui() -> gr.Blocks:
                 table_html = gr.HTML()
                 table_btn.click(cb_visualize_predictions_table, inputs=[max_rows], outputs=[table_html])
 
+#            # --- Tab: Alarmas (px.scatter) ---
+#            with gr.Tab("7) Explorar alarmas"):
+#                gr.Markdown("Gráfico interactivo `px.scatter` configurable.")
+#                x_col = gr.Dropdown(label="Eje X (por defecto: fecha)", choices=[], interactive=True)
+#                y_col = gr.Dropdown(label="Eje Y (por defecto: equipo)", choices=[], interactive=True)
+#                color_col = gr.Dropdown(label="Color (por defecto: instruccion_mantenimiento)", choices=[], interactive=True)
+#                alarma_filter = gr.Textbox(label="Filtro exacto por 'alarma' (opcional)")
+#                scatter_btn = gr.Button("Dibujar scatter")
+#                scatter_plot = gr.Plot(label="Alarmas — scatter interactivo")
+#
+#                # Popular choices con columnas dataset
+#                load_btn.click(_fill_choices, inputs=[cols], outputs=[x_col, y_col, color_col, gr.State(None), gr.State(None), gr.State(None)])
+#
+#                # Defaults sugeridos
+#                def _alarm_defaults():
+#                    m = STATE.mappings
+#                    return (m.get("fecha"), m.get("id_equipo") or "equipo", m.get("instruccion_mantenimiento"))
+#
+#                load_btn.click(_alarm_defaults, outputs=[x_col, y_col, color_col])
+#
+#                scatter_btn.click(cb_alarm_scatter, inputs=[x_col, y_col, color_col, alarma_filter], outputs=[scatter_plot])
+
             # --- Tab: Alarmas (px.scatter) ---
             with gr.Tab("7) Explorar alarmas"):
                 gr.Markdown("Gráfico interactivo `px.scatter` configurable.")
@@ -518,17 +540,20 @@ def build_ui() -> gr.Blocks:
                 alarma_filter = gr.Textbox(label="Filtro exacto por 'alarma' (opcional)")
                 scatter_btn = gr.Button("Dibujar scatter")
                 scatter_plot = gr.Plot(label="Alarmas — scatter interactivo")
-
+            
                 # Popular choices con columnas dataset
-                load_btn.click(_fill_choices, inputs=[cols], outputs=[x_col, y_col, color_col, gr.State(None), gr.State(None), gr.State(None)])
-
+                def _fill_alarm_choices(c):
+                    return c, c, c
+            
+                load_btn.click(_fill_alarm_choices, inputs=[cols], outputs=[x_col, y_col, color_col])
+            
                 # Defaults sugeridos
                 def _alarm_defaults():
                     m = STATE.mappings
                     return (m.get("fecha"), m.get("id_equipo") or "equipo", m.get("instruccion_mantenimiento"))
-
+            
                 load_btn.click(_alarm_defaults, outputs=[x_col, y_col, color_col])
-
+            
                 scatter_btn.click(cb_alarm_scatter, inputs=[x_col, y_col, color_col, alarma_filter], outputs=[scatter_plot])
 
             # --- Tab: Logs ---
