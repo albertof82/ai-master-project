@@ -77,6 +77,27 @@ STATE = AppState()
 # ---- Helpers de UI ----
 from typing import Union
 
+#def _read_uploaded_file(file_path: Union[str, None]) -> Tuple[str, pd.DataFrame]:
+#    if not file_path:
+#        raise ValueError("No se recibió archivo. Sube un .csv o .parquet")
+#
+#    name = os.path.basename(file_path)
+#    ext = os.path.splitext(name)[1].lower()
+#
+#    logger.info(f"Intentando cargar archivo: {name}")
+#    if ext == ".csv":
+#        df = pd.read_csv(file_path)
+#    elif ext == ".parquet":
+#        import pyarrow  # noqa: F401
+#        df = pd.read_parquet(file_path)
+#    else:
+#        raise ValueError(f"Extensión no soportada: {ext}. Usa .csv o .parquet")
+#
+#    if df.empty:
+#        raise ValueError("El archivo parece estar vacío.")
+#    return name, df
+
+
 def _read_uploaded_file(file_path: Union[str, None]) -> Tuple[str, pd.DataFrame]:
     if not file_path:
         raise ValueError("No se recibió archivo. Sube un .csv o .parquet")
