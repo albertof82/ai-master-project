@@ -98,26 +98,60 @@ from typing import Union
 #    return name, df
 
 
+#def _read_uploaded_file(file_path: Union[str, None]) -> Tuple[str, pd.DataFrame]:
+#    if not file_path:
+#        raise ValueError("No se recibió archivo. Sube un .csv o .parquet")
+#
+#    name = os.path.basename(file_path)
+#    ext = os.path.splitext(name)[1].lower()
+#
+#    logger.info(f"Intentando cargar archivo: {name}")
+#    if ext == ".csv":
+#        df = pd.read_csv(file_path)
+#    elif ext == ".parquet":
+#        import pyarrow  # noqa: F401
+#        df = pd.read_parquet(file_path)
+#    else:
+#        raise ValueError(f"Extensión no soportada: {ext}. Usa .csv o .parquet")
+#
+#    if df.empty:
+#        raise ValueError("El archivo parece estar vacío.")
+#    return name, df
+
 def _read_uploaded_file(file_path: Union[str, None]) -> Tuple[str, pd.DataFrame]:
+    """Lee archivo CSV o Parquet desde la ruta proporcionada."""
     if not file_path:
+        logger.error("file_path is None or empty")
         raise ValueError("No se recibió archivo. Sube un .csv o .parquet")
+
+    # Validate file exists
+    if not os.path.exists(file_path):
+        logger.error(f"File does not exist: {file_path}")
+        raise ValueError(f"El archivo no existe en la ruta: {file_path}")
 
     name = os.path.basename(file_path)
     ext = os.path.splitext(name)[1].lower()
 
-    logger.info(f"Intentando cargar archivo: {name}")
-    if ext == ".csv":
-        df = pd.read_csv(file_path)
-    elif ext == ".parquet":
-        import pyarrow  # noqa: F401
-        df = pd.read_parquet(file_path)
-    else:
-        raise ValueError(f"Extensión no soportada: {ext}. Usa .csv o .parquet")
+    logger.info(f"Intentando cargar archivo: {name}, extensión: {ext}, ruta completa: {file_path}")
+    
+    try:
+        if ext == ".csv":
+            df = pd.read_csv(file_path)
+            logger.info(f"CSV cargado exitosamente. Shape: {df.shape}")
+        elif ext == ".parquet":
+            import pyarrow  # noqa: F401
+            df = pd.read_parquet(file_path)
+            logger.info(f"Parquet cargado exitosamente. Shape: {df.shape}")
+        else:
+            raise ValueError(f"Extensión no soportada: {ext}. Usa .csv o .parquet")
+    except Exception as e:
+        logger.error(f"Error al leer archivo {name}: {str(e)}")
+        raise ValueError(f"Error al leer el archivo {name}: {str(e)}")
 
     if df.empty:
         raise ValueError("El archivo parece estar vacío.")
+    
     return name, df
-
 
 
 def _auto_guess_mappings(df: pd.DataFrame) -> Dict[str, Optional[str] | List[str]]:
@@ -135,6 +169,39 @@ def _auto_guess_mappings(df: pd.DataFrame) -> Dict[str, Optional[str] | List[str
 
 
 # ---- Callbacks ----
+#def cb_load_file(file: str, use_synthetic: bool) -> Tuple[str, str, gr.Dataframe, List[str]]:
+#    """
+#    Carga dataset subido o genera datos sintéticos para demo.
+#    Devuelve: mensaje, resumen, head, columnas.
+#    """
+#    try:
+#        if use_synthetic:
+#            df = generate_synthetic_data(n=800)
+#            msg = "Se generaron datos sintéticos para prueba."
+#            filename = "synthetic_memory_df"
+#        else:
+#            filename, df = _read_uploaded_file(file)
+#            msg = f"Archivo '{filename}' cargado correctamente."
+#
+#        STATE.raw_df = df.copy()
+#        STATE.proc_df = None
+#        STATE.preds_df = None
+#        STATE.metrics = None
+#
+#        # Intento de mapeo automático
+#        STATE.mappings = _auto_guess_mappings(df)
+#
+#        summary = summarize_dataframe(df)
+#        head = df.head(20)
+#        cols = list(df.columns)
+#        logger.info(f"Carga ok: shape={df.shape}")
+#
+#        return msg, summary, head, cols
+#    except Exception as e:
+#        logger.exception("Error al cargar archivo")
+#        return f"❌ Error: {e}", "", pd.DataFrame(), []
+
+
 def cb_load_file(file: str, use_synthetic: bool) -> Tuple[str, str, gr.Dataframe, List[str]]:
     """
     Carga dataset subido o genera datos sintéticos para demo.
@@ -146,6 +213,19 @@ def cb_load_file(file: str, use_synthetic: bool) -> Tuple[str, str, gr.Dataframe
             msg = "Se generaron datos sintéticos para prueba."
             filename = "synthetic_memory_df"
         else:
+            # Add validation before calling _read_uploaded_file
+            if not file or file is None:
+                logger.error("No file received from Gradio")
+                return "❌ Error: No se recibió ningún archivo. Por favor, sube un archivo CSV o Parquet.", "", pd.DataFrame(), []
+            
+            # Log what we received
+            logger.info(f"File received from Gradio: {file}, type: {type(file)}")
+            
+            # Check if file exists
+            if not os.path.exists(file):
+                logger.error(f"File does not exist at path: {file}")
+                return f"❌ Error: El archivo no existe en la ruta: {file}", "", pd.DataFrame(), []
+            
             filename, df = _read_uploaded_file(file)
             msg = f"Archivo '{filename}' cargado correctamente."
 
@@ -165,8 +245,8 @@ def cb_load_file(file: str, use_synthetic: bool) -> Tuple[str, str, gr.Dataframe
         return msg, summary, head, cols
     except Exception as e:
         logger.exception("Error al cargar archivo")
-        return f"❌ Error: {e}", "", pd.DataFrame(), []
-
+        error_msg = f"❌ Error al cargar archivo: {str(e)}\n\n{traceback.format_exc()}"
+        return error_msg, "", pd.DataFrame(), []
 
 def cb_set_mappings(
     id_equipo: Optional[str],
