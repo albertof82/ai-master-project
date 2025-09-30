@@ -550,6 +550,21 @@ def build_ui() -> gr.Blocks:
     return demo
 
 
+#def main():
+#    parser = argparse.ArgumentParser()
+#    parser.add_argument("--host", type=str, default="0.0.0.0")
+#    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "7860")))
+#    parser.add_argument("--no-share", action="store_true", help="No abrir túnel público (útil local/producción).")
+#    args = parser.parse_args()
+#
+#    demo = build_ui()
+#    demo.queue()  # feedback/spinners
+#    demo.launch(server_name=args.host, server_port=args.port, share=not args.no_share)
+#
+#
+#if __name__ == "__main__":
+#    main()
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0")
@@ -558,9 +573,12 @@ def main():
     args = parser.parse_args()
 
     demo = build_ui()
-    demo.queue()  # feedback/spinners
-    demo.launch(server_name=args.host, server_port=args.port, share=not args.no_share)
-
-
-if __name__ == "__main__":
-    main()
+    # For Colab, we need specific settings
+    demo.queue()
+    demo.launch(
+        server_name=args.host, 
+        server_port=args.port, 
+        share=not args.no_share,
+        debug=True,  # Add debug mode
+        quiet=False  # Show all logs
+    )
